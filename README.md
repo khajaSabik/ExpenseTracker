@@ -5,19 +5,22 @@ Our application uses a complete automation pipeline featuring:
 - Automated Qdrant database backups to S3
 - Slack notifications for deployment events
 
-## Architecture Overview
 studybuds/
-├── studybuds-cicd/ # CI/CD and Kubernetes configurations
-│ └── cicd/
-│ ├── dev/ # Development environment
-│ │ ├── common/ # Shared resources
-│ │ ├── secrets/ # Secret management
-│ │ └── [services] # Component deployments
-│ ├── prod/ # Production environment
-│ └── stg/ # Staging environment
-├── .github/workflows/ # GitHub Actions definitions
-└── scripts/ # Maintenance scripts
-
+├── .github/
+│   └── workflows/
+│       ├── ci-cd.yml          # Main pipeline
+│       └── backup-alerts.yml  # Backup monitoring
+├── studybuds-cicd/
+│   ├── base/                 # Common manifests
+│   ├── dev/                  # Dev environment
+│   ├── stg/                  # Staging
+│   └── prod/                 # Production
+├── scripts/
+│   ├── backup-qdrant.sh       # Backup script
+│   └── restore-qdrant.sh      # Recovery script
+└── docs/
+    ├── architecture.md       # Detailed design
+    └── runbooks/            # Operational procedures
 
 
 ## Automation Pipeline
