@@ -1,105 +1,109 @@
-Our application uses a complete automation pipeline featuring:
-- GitHub Actions CI/CD workflows
-- ArgoCD for Kubernetes GitOps deployments
-- Nginx reverse proxy with Certbot-managed SSL
-- Automated Qdrant database backups to S3
-- Slack notifications for deployment events
+# StudyBuds Project
 
-studybuds/
-├── .github/
-│   └── workflows/
-│       ├── ci-cd.yml          # Main pipeline
-│       └── backup-alerts.yml  # Backup monitoring
+## Overview
+
+The **StudyBuds** project is designed to provide a seamless and efficient learning experience with a microservices-based architecture, leveraging **Node.js** for the frontend and Kubernetes for deployment. The project employs **Docker** for containerization, **GitHub Actions** for continuous integration and deployment (CI/CD), and **Argo CD** for GitOps-based deployments on **Amazon EKS** clusters.
+
+This repository contains the infrastructure and configurations for **StudyBuds**, which includes three environments: **development (dev)**, **staging (stg)**, and **production (prod)**. The system utilizes **VPC Peering** for secure, private communication between isolated networks, **NGINX** for service proxying, and **AWS Secrets Manager** for secure secrets management. SSL certificates are managed by **Certbot**, and logs are aggregated using **LokiStack** for centralized monitoring and analysis.
+
+## Project Structure
+
+```studybuds/
 ├── studybuds-cicd/
-│   ├── base/                 # Common manifests
-│   ├── dev/                  # Dev environment
-│   ├── stg/                  # Staging
-│   └── prod/                 # Production
-├── scripts/
-│   ├── backup-qdrant.sh       # Backup script
-│   └── restore-qdrant.sh      # Recovery script
-└── docs/
-    ├── architecture.md       # Detailed design
-    └── runbooks/            # Operational procedures
+│   └── cicd/
+│       ├── dev/
+│       │   ├── common/
+│       │   │   ├── deployment.yaml
+│       │   │   ├── ingress.yaml
+│       │   │   ├── kustomization.yaml
+│       │   │   └── pvc.yaml
+│       │   ├── secrets/
+│       │   │   ├── kustomization.yaml
+│       │   │   └── secrets.yaml
+│       │   ├── studybuds-ai-backend/
+│       │   │   ├── deployment.yaml
+│       │   │   └── kustomization.yaml
+│       │   ├── studybuds-backend/
+│       │   ├── studybuds-backend-v2/
+│       │   │   ├── deployment.yaml
+│       │   │   └── kustomization.yaml
+│       │   └── studybuds-frontend-v2/
+│       │       ├── apps.yaml
+│       │       └── kustomization.yaml
+│   └── prod/
+│   └── stg/
+│   └── kustomization.yaml
+├── .bash_history
+└── script.sh
+```
 
 
-## Automation Pipeline
+### **studybuds-cicd/**
+Contains all the configurations and scripts for the CI/CD pipeline and deployment across different environments.
 
-### 1. CI/CD with GitHub Actions
-- **Trigger**: On every push to main branch
-- **Stages**:
-  1. Test: Run unit and integration tests
-  2. Build: Create Docker container images
-  3. Deploy: Trigger ArgoCD sync
-- **Artifacts**: Versioned container images in registry
+- **dev/**: Contains Kubernetes configuration files for the development environment.
+  - **common/**: Common configurations shared across all services in the environment.
+  - **secrets/**: Contains secrets and environment-specific configurations for the dev environment.
+  - **studybuds-frontend-v2/**, **studybuds-backend/**, **studybuds-backend-v2/**, **studybuds-ai-backend/**: Kubernetes deployment configurations for each service within the development environment.
 
-### 2. GitOps Deployment with ArgoCD
-- **Synchronization**: Auto-syncs Kubernetes cluster with manifests in this repo
-- **Environments**:
-  - Development (immediate sync)
-  - Staging (manual approval)
-  - Production (manual approval with checks)
-- **Monitoring**: Visual deployment history and health status
+- **stg/**: Contains configurations for the staging environment.
+- **prod/**: Contains configurations for the production environment.
 
-### 3. Infrastructure Components
-- **Nginx Proxy**:
-  - Routes traffic to appropriate services
-  - Terminates SSL connections
-- **Certbot**:
-  - Automated SSL certificate management
-  - Auto-renewal before expiration
+### **.bash_history**
+A history file for command-line activities.
 
-### 4. Data Management
-- **Qdrant Backups**:
-  - Weekly backups (Sunday 8 PM UTC)
-  - Compressed and encrypted S3 storage
-  - Retention policy: 30 days
-- **Backup Verification**:
-  - Monthly test restores
-  - Size growth monitoring
+### **script.sh**
+A bash script for various automation tasks in the project.
 
-## Notification System
-- **Slack Alerts** for:
-  - Deployment successes/failures
-  - Backup completion
-  - Certificate renewal
-- **Channels**:
-  - #deployments - CI/CD events
-  - #alerts - System warnings
+## Features and Architecture
 
-## Environment Configurations
+- **Frontend**: Built using **Node.js**, containerized into Docker images, and deployed using Kubernetes on **Amazon EKS** clusters.
+- **CI/CD Pipeline**: Configured in **GitHub Actions** for automated deployments to specific environments upon push to a corresponding branch.
+- **Argo CD**: GitOps for deployment management, ensuring continuous and consistent application deployment.
+- **EKS Clusters**: Three separate **EKS clusters** deployed for development, staging, and production environments.
+- **VPC Peering**: Secure, cost-effective, and low-latency communication between isolated networks.
+- **NGINX Reverse Proxy**: Configured to manage internal communication across services.
+- **Secrets Management**: Sensitive information like passwords, API keys, and SSH keys are securely stored in **AWS Secrets Manager**.
+- **SSL Certificates**: Managed using **Certbot** for secure communication.
+- **Backup**: **Qdrant** data is backed up incrementally via a **bash script** scheduled to run every **Sunday evening** and stored in **Amazon S3**.
+- **Slack Notifications**: Real-time feedback is provided via Slack notifications for every code push.
+- **Centralized Logging**: Integrated **LokiStack** for log aggregation, providing a unified view of logs across all services and clusters.
 
-| Environment | Auto-Deploy | Approval | Scale  | Access       |
-|-------------|-------------|----------|--------|--------------|
-| Dev         | ✓           | -        | 1-2    | All engineers|
-| Staging     | -           | ✓        | 2-3    | QA team      |
-| Production  | -           | ✓✓       | 5+     | DevOps       |
+## Deployment
 
-## Maintenance Procedures
+### 1. **Set Up the Environment**
 
-### Regular Checks
-1. **Certificate Status**: Monthly verification
-2. **Backup Integrity**: Test restore quarterly
-3. **Pipeline Health**: Weekly workflow review
+Ensure that the necessary tools are installed:
 
-### Recovery Processes
-- **Failed Deployment**: Rollback via ArgoCD history
-- **Backup Restoration**: Use `restore-qdrant.sh` script
-- **SSL Issues**: Re-run Certbot validation
+- **Docker**: For containerizing the Node.js frontend.
+- **kubectl**: For interacting with Kubernetes.
+- **AWS CLI**: For managing AWS services like EKS and Secrets Manager.
+- **Argo CD**: For GitOps deployment and management of Kubernetes resources.
 
-## Getting Started
+### 2. **CI/CD Pipeline Configuration**
 
-### For Developers
-1. Push to feature branches for testing
-2. Merge to main triggers deployment pipeline
-3. Monitor Slack for deployment status
+- The **CI/CD pipeline** is defined using **GitHub Actions** and is configured to deploy changes to specific environments upon push to a corresponding branch.
+- **Argo CD** manages the deployment, ensuring the latest application updates are automatically deployed to the Kubernetes clusters.
 
-### For Operations
-1. Review ArgoCD dashboard before production promotions
-2. Verify backup completion every Monday
-3. Respond to Slack alerts within SLA
+### 3. **Kubernetes Deployment**
 
-## Security
-- Secrets encrypted in storage
-- Minimal production access
-- Audit logs for all deployments
+- Deploy the application on **Amazon EKS** using Kubernetes configuration files located in the respective environment directories (`dev`, `stg`, `prod`).
+- **NGINX** is set up as a reverse proxy to ensure secure communication across services.
+
+### 4. **Secrets and Configuration Management**
+
+- Sensitive credentials (API keys, passwords, etc.) are securely stored in **AWS Secrets Manager**.
+- Non-sensitive data is stored in **ConfigMaps** and managed via **Kustomize** for Kubernetes.
+
+### 5. **Backup Configuration**
+
+- Incremental backups of **Qdrant** data are scheduled using **CronJobs** and stored securely in **Amazon S3**.
+
+## Additional Notes
+
+- This project follows best practices for secure cloud-native architecture, with emphasis on private networking, secret management, and continuous deployment.
+- **LokiStack** for centralized logging provides visibility across all microservices, making it easier to track issues and monitor performance.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
